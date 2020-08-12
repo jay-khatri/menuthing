@@ -1,0 +1,27 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type Menu {
+  id: ID!
+  title: String!
+  description: String!
+}
+
+type MenuItem {
+  id: ID!
+  title: String!
+  description: String!
+}
+
+type Query {
+  menu(menu_id: String!): Menu
+  menuItems(menu_id: String!): [MenuItem!]!
+}
+
+type Mutation {
+  createMenu(menu_id: String!): Menu
+  createMenuItem(menu_id: String!): Menu
+  editMenuItem(menu_item_id: String!): [MenuItem!]!
+}
+
