@@ -83,7 +83,7 @@ function MenuPage() {
       </div>
     );
   }
-  if (!category_id && data.menuCategories.length) {
+  if (!category_id && data.menuCategories && data.menuCategories.length) {
     category_id = data.menuCategories[0].id;
   }
   return (
