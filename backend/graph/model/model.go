@@ -31,15 +31,16 @@ type Menu struct {
 
 type MenuItem struct {
 	Model
-	Title          *string         `json:"title"`
-	Description    *string         `json:"description"`
-	MenuCategories []*MenuCategory `gorm:"foreignkey:MenuItemID:association_foreignkey:ID"`
-	RestaurantID   ObjectID
+	Title          *string `json:"title"`
+	Description    *string `json:"description"`
+	MenuCategoryID ObjectID
+	MenuID         ObjectID
 }
 
 type MenuCategory struct {
-	Title        *string `json:"title"`
-	RestaurantID ObjectID
+	Model
+	Title  *string `json:"title"`
+	MenuID ObjectID
 }
 
 func (base *Model) BeforeCreate(scope *gorm.Scope) error {

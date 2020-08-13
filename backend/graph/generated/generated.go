@@ -49,6 +49,11 @@ type ComplexityRoot struct {
 		Title       func(childComplexity int) int
 	}
 
+	MenuCategory struct {
+		ID    func(childComplexity int) int
+		Title func(childComplexity int) int
+	}
+
 	MenuItem struct {
 		Description func(childComplexity int) int
 		ID          func(childComplexity int) int
@@ -56,25 +61,29 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateMenu     func(childComplexity int, menuID string) int
-		CreateMenuItem func(childComplexity int, menuID string) int
-		EditMenuItem   func(childComplexity int, menuItemID string) int
+		CreateMenu         func(childComplexity int, title string, description string) int
+		CreateMenuCategory func(childComplexity int, title string, menuID model.ObjectID) int
+		CreateMenuItem     func(childComplexity int, title string, description string, menuID model.ObjectID, menuCategoryID model.ObjectID) int
 	}
 
 	Query struct {
-		Menu      func(childComplexity int, menuID string) int
-		MenuItems func(childComplexity int, menuID string) int
+		Menu           func(childComplexity int, id model.ObjectID) int
+		MenuCategories func(childComplexity int, menuID model.ObjectID) int
+		MenuItems      func(childComplexity int, menuID model.ObjectID, menuCategoryID *model.ObjectID) int
+		Menus          func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
-	CreateMenu(ctx context.Context, menuID string) (*model.Menu, error)
-	CreateMenuItem(ctx context.Context, menuID string) (*model.Menu, error)
-	EditMenuItem(ctx context.Context, menuItemID string) ([]*model.MenuItem, error)
+	CreateMenu(ctx context.Context, title string, description string) (*model.Menu, error)
+	CreateMenuItem(ctx context.Context, title string, description string, menuID model.ObjectID, menuCategoryID model.ObjectID) (*model.MenuItem, error)
+	CreateMenuCategory(ctx context.Context, title string, menuID model.ObjectID) (*model.MenuCategory, error)
 }
 type QueryResolver interface {
-	Menu(ctx context.Context, menuID string) (*model.Menu, error)
-	MenuItems(ctx context.Context, menuID string) ([]*model.MenuItem, error)
+	Menus(ctx context.Context) ([]*model.Menu, error)
+	Menu(ctx context.Context, id model.ObjectID) (*model.Menu, error)
+	MenuItems(ctx context.Context, menuID model.ObjectID, menuCategoryID *model.ObjectID) ([]*model.MenuItem, error)
+	MenuCategories(ctx context.Context, menuID model.ObjectID) ([]*model.MenuCategory, error)
 }
 
 type executableSchema struct {
@@ -113,6 +122,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Menu.Title(childComplexity), true
 
+	case "MenuCategory.id":
+		if e.complexity.MenuCategory.ID == nil {
+			break
+		}
+
+		return e.complexity.MenuCategory.ID(childComplexity), true
+
+	case "MenuCategory.title":
+		if e.complexity.MenuCategory.Title == nil {
+			break
+		}
+
+		return e.complexity.MenuCategory.Title(childComplexity), true
+
 	case "MenuItem.description":
 		if e.complexity.MenuItem.Description == nil {
 			break
@@ -144,7 +167,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateMenu(childComplexity, args["menu_id"].(string)), true
+		return e.complexity.Mutation.CreateMenu(childComplexity, args["title"].(string), args["description"].(string)), true
+
+	case "Mutation.createMenuCategory":
+		if e.complexity.Mutation.CreateMenuCategory == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createMenuCategory_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateMenuCategory(childComplexity, args["title"].(string), args["menu_id"].(model.ObjectID)), true
 
 	case "Mutation.createMenuItem":
 		if e.complexity.Mutation.CreateMenuItem == nil {
@@ -156,19 +191,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateMenuItem(childComplexity, args["menu_id"].(string)), true
-
-	case "Mutation.editMenuItem":
-		if e.complexity.Mutation.EditMenuItem == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_editMenuItem_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.EditMenuItem(childComplexity, args["menu_item_id"].(string)), true
+		return e.complexity.Mutation.CreateMenuItem(childComplexity, args["title"].(string), args["description"].(string), args["menu_id"].(model.ObjectID), args["menu_category_id"].(model.ObjectID)), true
 
 	case "Query.menu":
 		if e.complexity.Query.Menu == nil {
@@ -180,7 +203,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Menu(childComplexity, args["menu_id"].(string)), true
+		return e.complexity.Query.Menu(childComplexity, args["id"].(model.ObjectID)), true
+
+	case "Query.menuCategories":
+		if e.complexity.Query.MenuCategories == nil {
+			break
+		}
+
+		args, err := ec.field_Query_menuCategories_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.MenuCategories(childComplexity, args["menu_id"].(model.ObjectID)), true
 
 	case "Query.menuItems":
 		if e.complexity.Query.MenuItems == nil {
@@ -192,7 +227,14 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.MenuItems(childComplexity, args["menu_id"].(string)), true
+		return e.complexity.Query.MenuItems(childComplexity, args["menu_id"].(model.ObjectID), args["menu_category_id"].(*model.ObjectID)), true
+
+	case "Query.menus":
+		if e.complexity.Query.Menus == nil {
+			break
+		}
+
+		return e.complexity.Query.Menus(childComplexity), true
 
 	}
 	return 0, false
@@ -274,17 +316,33 @@ type MenuItem {
   description: String!
 }
 
+type MenuCategory {
+  id: ID!
+  title: String!
+}
+
 type Query {
-  menu(menu_id: String!): Menu
-  menuItems(menu_id: String!): [MenuItem!]!
+  menus: [Menu!]
+  menu(id: ID!): Menu
+  menuItems(menu_id: ID!, menu_category_id: ID): [MenuItem!]!
+  menuCategories(menu_id: ID!): [MenuCategory!]!
 }
 
 type Mutation {
-  createMenu(menu_id: String!): Menu
-  createMenuItem(menu_id: String!): Menu
-  editMenuItem(menu_item_id: String!): [MenuItem!]!
-}
+  createMenu(title: String!, description: String!): Menu
 
+  createMenuItem(
+    title: String!
+    description: String!
+    menu_id: ID!
+    menu_category_id: ID!
+  ): MenuItem
+
+  createMenuCategory(
+    title: String!
+    menu_id: ID!
+  ): MenuCategory
+}
 `, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -293,17 +351,63 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutation_createMenuItem_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_createMenuCategory_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["menu_id"]; ok {
+	if tmp, ok := rawArgs["title"]; ok {
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["menu_id"] = arg0
+	args["title"] = arg0
+	var arg1 model.ObjectID
+	if tmp, ok := rawArgs["menu_id"]; ok {
+		arg1, err = ec.unmarshalNID2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐObjectID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["menu_id"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createMenuItem_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["title"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["title"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["description"]; ok {
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["description"] = arg1
+	var arg2 model.ObjectID
+	if tmp, ok := rawArgs["menu_id"]; ok {
+		arg2, err = ec.unmarshalNID2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐObjectID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["menu_id"] = arg2
+	var arg3 model.ObjectID
+	if tmp, ok := rawArgs["menu_category_id"]; ok {
+		arg3, err = ec.unmarshalNID2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐObjectID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["menu_category_id"] = arg3
 	return args, nil
 }
 
@@ -311,27 +415,21 @@ func (ec *executionContext) field_Mutation_createMenu_args(ctx context.Context, 
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["menu_id"]; ok {
+	if tmp, ok := rawArgs["title"]; ok {
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["menu_id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_editMenuItem_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["menu_item_id"]; ok {
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+	args["title"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["description"]; ok {
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["menu_item_id"] = arg0
+	args["description"] = arg1
 	return args, nil
 }
 
@@ -349,12 +447,12 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_menuItems_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_menuCategories_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
+	var arg0 model.ObjectID
 	if tmp, ok := rawArgs["menu_id"]; ok {
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐObjectID(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -363,17 +461,39 @@ func (ec *executionContext) field_Query_menuItems_args(ctx context.Context, rawA
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_menu_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_menuItems_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
+	var arg0 model.ObjectID
 	if tmp, ok := rawArgs["menu_id"]; ok {
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐObjectID(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["menu_id"] = arg0
+	var arg1 *model.ObjectID
+	if tmp, ok := rawArgs["menu_category_id"]; ok {
+		arg1, err = ec.unmarshalOID2ᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐObjectID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["menu_category_id"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_menu_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.ObjectID
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐObjectID(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -499,6 +619,74 @@ func (ec *executionContext) _Menu_description(ctx context.Context, field graphql
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalNString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MenuCategory_id(ctx context.Context, field graphql.CollectedField, obj *model.MenuCategory) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "MenuCategory",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.ObjectID)
+	fc.Result = res
+	return ec.marshalNID2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐObjectID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MenuCategory_title(ctx context.Context, field graphql.CollectedField, obj *model.MenuCategory) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "MenuCategory",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -641,7 +829,7 @@ func (ec *executionContext) _Mutation_createMenu(ctx context.Context, field grap
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateMenu(rctx, args["menu_id"].(string))
+		return ec.resolvers.Mutation().CreateMenu(rctx, args["title"].(string), args["description"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -679,7 +867,7 @@ func (ec *executionContext) _Mutation_createMenuItem(ctx context.Context, field 
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateMenuItem(rctx, args["menu_id"].(string))
+		return ec.resolvers.Mutation().CreateMenuItem(rctx, args["title"].(string), args["description"].(string), args["menu_id"].(model.ObjectID), args["menu_category_id"].(model.ObjectID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -688,12 +876,12 @@ func (ec *executionContext) _Mutation_createMenuItem(ctx context.Context, field 
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model.Menu)
+	res := resTmp.(*model.MenuItem)
 	fc.Result = res
-	return ec.marshalOMenu2ᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenu(ctx, field.Selections, res)
+	return ec.marshalOMenuItem2ᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuItem(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_editMenuItem(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_createMenuCategory(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -709,7 +897,7 @@ func (ec *executionContext) _Mutation_editMenuItem(ctx context.Context, field gr
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_editMenuItem_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_createMenuCategory_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -717,21 +905,49 @@ func (ec *executionContext) _Mutation_editMenuItem(ctx context.Context, field gr
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().EditMenuItem(rctx, args["menu_item_id"].(string))
+		return ec.resolvers.Mutation().CreateMenuCategory(rctx, args["title"].(string), args["menu_id"].(model.ObjectID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.MenuItem)
+	res := resTmp.(*model.MenuCategory)
 	fc.Result = res
-	return ec.marshalNMenuItem2ᚕᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuItemᚄ(ctx, field.Selections, res)
+	return ec.marshalOMenuCategory2ᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuCategory(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_menus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Menus(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Menu)
+	fc.Result = res
+	return ec.marshalOMenu2ᚕᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_menu(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -758,7 +974,7 @@ func (ec *executionContext) _Query_menu(ctx context.Context, field graphql.Colle
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Menu(rctx, args["menu_id"].(string))
+		return ec.resolvers.Query().Menu(rctx, args["id"].(model.ObjectID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -796,7 +1012,7 @@ func (ec *executionContext) _Query_menuItems(ctx context.Context, field graphql.
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().MenuItems(rctx, args["menu_id"].(string))
+		return ec.resolvers.Query().MenuItems(rctx, args["menu_id"].(model.ObjectID), args["menu_category_id"].(*model.ObjectID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -811,6 +1027,47 @@ func (ec *executionContext) _Query_menuItems(ctx context.Context, field graphql.
 	res := resTmp.([]*model.MenuItem)
 	fc.Result = res
 	return ec.marshalNMenuItem2ᚕᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuItemᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_menuCategories(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_menuCategories_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().MenuCategories(rctx, args["menu_id"].(model.ObjectID))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.MenuCategory)
+	fc.Result = res
+	return ec.marshalNMenuCategory2ᚕᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuCategoryᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1982,6 +2239,38 @@ func (ec *executionContext) _Menu(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
+var menuCategoryImplementors = []string{"MenuCategory"}
+
+func (ec *executionContext) _MenuCategory(ctx context.Context, sel ast.SelectionSet, obj *model.MenuCategory) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, menuCategoryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MenuCategory")
+		case "id":
+			out.Values[i] = ec._MenuCategory_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "title":
+			out.Values[i] = ec._MenuCategory_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var menuItemImplementors = []string{"MenuItem"}
 
 func (ec *executionContext) _MenuItem(ctx context.Context, sel ast.SelectionSet, obj *model.MenuItem) graphql.Marshaler {
@@ -2038,11 +2327,8 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec._Mutation_createMenu(ctx, field)
 		case "createMenuItem":
 			out.Values[i] = ec._Mutation_createMenuItem(ctx, field)
-		case "editMenuItem":
-			out.Values[i] = ec._Mutation_editMenuItem(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+		case "createMenuCategory":
+			out.Values[i] = ec._Mutation_createMenuCategory(ctx, field)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2069,6 +2355,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
+		case "menus":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_menus(ctx, field)
+				return res
+			})
 		case "menu":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -2089,6 +2386,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_menuItems(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "menuCategories":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_menuCategories(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -2381,6 +2692,71 @@ func (ec *executionContext) marshalNID2githubᚗcomᚋjayᚑkhatriᚋmenuthing�
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNMenu2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenu(ctx context.Context, sel ast.SelectionSet, v model.Menu) graphql.Marshaler {
+	return ec._Menu(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMenu2ᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenu(ctx context.Context, sel ast.SelectionSet, v *model.Menu) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Menu(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMenuCategory2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuCategory(ctx context.Context, sel ast.SelectionSet, v model.MenuCategory) graphql.Marshaler {
+	return ec._MenuCategory(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMenuCategory2ᚕᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuCategoryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.MenuCategory) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMenuCategory2ᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuCategory(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNMenuCategory2ᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuCategory(ctx context.Context, sel ast.SelectionSet, v *model.MenuCategory) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._MenuCategory(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNMenuItem2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuItem(ctx context.Context, sel ast.SelectionSet, v model.MenuItem) graphql.Marshaler {
@@ -2715,8 +3091,72 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return ec.marshalOBoolean2bool(ctx, sel, *v)
 }
 
+func (ec *executionContext) unmarshalOID2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐObjectID(ctx context.Context, v interface{}) (model.ObjectID, error) {
+	tmp, err := graphql.UnmarshalString(v)
+	return model.ObjectID(tmp), err
+}
+
+func (ec *executionContext) marshalOID2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐObjectID(ctx context.Context, sel ast.SelectionSet, v model.ObjectID) graphql.Marshaler {
+	return graphql.MarshalString(string(v))
+}
+
+func (ec *executionContext) unmarshalOID2ᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐObjectID(ctx context.Context, v interface{}) (*model.ObjectID, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOID2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐObjectID(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) marshalOID2ᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐObjectID(ctx context.Context, sel ast.SelectionSet, v *model.ObjectID) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec.marshalOID2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐObjectID(ctx, sel, *v)
+}
+
 func (ec *executionContext) marshalOMenu2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenu(ctx context.Context, sel ast.SelectionSet, v model.Menu) graphql.Marshaler {
 	return ec._Menu(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOMenu2ᚕᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Menu) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMenu2ᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenu(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
 }
 
 func (ec *executionContext) marshalOMenu2ᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenu(ctx context.Context, sel ast.SelectionSet, v *model.Menu) graphql.Marshaler {
@@ -2724,6 +3164,28 @@ func (ec *executionContext) marshalOMenu2ᚖgithubᚗcomᚋjayᚑkhatriᚋmenuth
 		return graphql.Null
 	}
 	return ec._Menu(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOMenuCategory2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuCategory(ctx context.Context, sel ast.SelectionSet, v model.MenuCategory) graphql.Marshaler {
+	return ec._MenuCategory(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOMenuCategory2ᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuCategory(ctx context.Context, sel ast.SelectionSet, v *model.MenuCategory) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._MenuCategory(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOMenuItem2githubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuItem(ctx context.Context, sel ast.SelectionSet, v model.MenuItem) graphql.Marshaler {
+	return ec._MenuItem(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOMenuItem2ᚖgithubᚗcomᚋjayᚑkhatriᚋmenuthingᚋbackendᚋgraphᚋmodelᚐMenuItem(ctx context.Context, sel ast.SelectionSet, v *model.MenuItem) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._MenuItem(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

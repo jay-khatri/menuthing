@@ -14,14 +14,30 @@ type MenuItem {
   description: String!
 }
 
+type MenuCategory {
+  id: ID!
+  title: String!
+}
+
 type Query {
-  menu(menu_id: String!): Menu
-  menuItems(menu_id: String!): [MenuItem!]!
+  menus: [Menu!]
+  menu(id: ID!): Menu
+  menuItems(menu_id: ID!, menu_category_id: ID): [MenuItem!]!
+  menuCategories(menu_id: ID!): [MenuCategory!]!
 }
 
 type Mutation {
-  createMenu(menu_id: String!): Menu
-  createMenuItem(menu_id: String!): Menu
-  editMenuItem(menu_item_id: String!): [MenuItem!]!
-}
+  createMenu(title: String!, description: String!): Menu
 
+  createMenuItem(
+    title: String!
+    description: String!
+    menu_id: ID!
+    menu_category_id: ID!
+  ): MenuItem
+
+  createMenuCategory(
+    title: String!
+    menu_id: ID!
+  ): MenuCategory
+}
