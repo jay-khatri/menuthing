@@ -11,6 +11,7 @@ type Menu {
 type MenuItem {
   id: ID!
   title: String!
+  price: Float!
   description: String!
 }
 
@@ -32,6 +33,7 @@ type Mutation {
   createMenuItem(
     title: String!
     description: String!
+    price: Float!
     menu_id: ID!
     menu_category_id: ID!
   ): MenuItem

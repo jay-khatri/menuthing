@@ -6,10 +6,9 @@ package graph
 import (
 	"context"
 
-	e "github.com/pkg/errors"
-
 	"github.com/jay-khatri/menuthing/backend/graph/generated"
 	"github.com/jay-khatri/menuthing/backend/graph/model"
+	e "github.com/pkg/errors"
 )
 
 func (r *mutationResolver) CreateMenu(ctx context.Context, title string, description string) (*model.Menu, error) {
@@ -23,12 +22,13 @@ func (r *mutationResolver) CreateMenu(ctx context.Context, title string, descrip
 	return menu, nil
 }
 
-func (r *mutationResolver) CreateMenuItem(ctx context.Context, title string, description string, menuID model.ObjectID, menuCategoryID model.ObjectID) (*model.MenuItem, error) {
+func (r *mutationResolver) CreateMenuItem(ctx context.Context, title string, description string, price float64, menuID model.ObjectID, menuCategoryID model.ObjectID) (*model.MenuItem, error) {
 	menuItem := &model.MenuItem{
 		Title:          &title,
 		Description:    &description,
 		MenuID:         menuID,
 		MenuCategoryID: menuCategoryID,
+		Price:          &price,
 	}
 	if err := r.DB.Create(menuItem).Error; err != nil {
 		return nil, e.Wrap(err, "error creating menu item")
@@ -75,6 +75,7 @@ func (r *queryResolver) MenuItems(ctx context.Context, menuID model.ObjectID, me
 	if err := res.Error; err != nil || res.RecordNotFound() {
 		return nil, e.Wrap(err, "can't get related menu items")
 	}
+	// TODO: fix this.
 	parsedItems := []*model.MenuItem{}
 	for _, m := range menuItems {
 		if menuCategoryID == nil {
