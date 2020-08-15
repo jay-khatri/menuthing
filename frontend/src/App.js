@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   BrowserRouter as Router,
   Switch,
@@ -17,25 +17,38 @@ import {
 import { ApolloProvider, useQuery } from "@apollo/client";
 import PuffLoader from "react-spinners/PuffLoader";
 import { FaCircle } from "react-icons/fa";
+import { createContainer } from "unstated-next";
 
 import "./App.css";
+
+function useOrderState(initialState = []) {
+  let [orders, setOrder] = useState(initialState);
+  let addOrderItem = id => {
+    setOrder(orders.concat(id));
+  };
+  return { orders, addOrderItem };
+}
+
+let OrderState = createContainer(useOrderState);
 
 function App() {
   return (
     <ApolloProvider client={client}>
-      <Router>
-        <Switch>
-          <Route path="/:menu_id/category/:category_id">
-            <MenuPage />
-          </Route>
-          <Route path="/:menu_id">
-            <MenuPage />
-          </Route>
-          <Route path="/">
-            <MenusPage />
-          </Route>
-        </Switch>
-      </Router>
+      <OrderState.Provider>
+        <Router>
+          <Switch>
+            <Route path="/:menu_id/category/:category_id">
+              <MenuPage />
+            </Route>
+            <Route path="/:menu_id">
+              <MenuPage />
+            </Route>
+            <Route path="/">
+              <MenusPage />
+            </Route>
+          </Switch>
+        </Router>
+      </OrderState.Provider>
     </ApolloProvider>
   );
 }
@@ -174,22 +187,52 @@ function MenuPage() {
             width: "100%"
           }}
         >
-          <div
-            style={{
-              width: "100%",
-              borderBottom: "1px solid #DDDDDD",
-              paddingBottom: 10
-            }}
-          >
-            Your Order
-          </div>
+          <OrderPage />
         </div>
       </div>
     </div>
   );
 }
 
+const OrderPage = props => {
+  let counter = OrderState.useContainer();
+  return (
+    <>
+      <div
+        style={{
+          width: "100%",
+          borderBottom: "1px solid #DDDDDD",
+          paddingBottom: 10
+        }}
+      >
+        Your Order
+      </div>
+      {counter.orders.map(i => (
+        <>
+          <div style={{ display: "flex", marginTop: 20 }}>
+            <div style={{ fontSize: 16, fontWeight: 500 }}>{i.title}</div>
+            <div style={{ fontSize: 16, marginLeft: "auto", color: "#888888" }}>
+              ${i.price}
+            </div>
+          </div>
+          <div
+            style={{
+              color: "#F5744B",
+              fontSize: 14,
+              fontWeight: 500,
+              marginTop: 5
+            }}
+          >
+            EDIT
+          </div>
+        </>
+      ))}
+    </>
+  );
+};
+
 const CategoryTab = props => {
+  let counter = OrderState.useContainer();
   const { menu_id, category_id } = useParams();
   const { loading, error, data } = useQuery(GET_MENU_ITEMS, {
     variables: {
@@ -218,7 +261,7 @@ const CategoryTab = props => {
               padding: 17,
               cursor: "pointer"
             }}
-            onClick={() => console.log("hi")}
+            onClick={() => counter.addOrderItem(item)}
           >
             <div style={{ fontSize: 16, fontWeight: 600 }}>{item.title}</div>
             <div
