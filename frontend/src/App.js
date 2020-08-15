@@ -18,7 +18,9 @@ import { ApolloProvider, useQuery } from "@apollo/client";
 import PuffLoader from "react-spinners/PuffLoader";
 import { FaCircle } from "react-icons/fa";
 import { createContainer } from "unstated-next";
+import { Modal } from "antd";
 
+import "antd/dist/antd.css";
 import "./App.css";
 
 function useOrderState(initialState = []) {
@@ -234,6 +236,7 @@ const OrderPage = props => {
 const CategoryTab = props => {
   let counter = OrderState.useContainer();
   const { menu_id, category_id } = useParams();
+  let [selectedItem, setSelectedItem] = useState(undefined);
   const { loading, error, data } = useQuery(GET_MENU_ITEMS, {
     variables: {
       menu_id: menu_id,
@@ -248,6 +251,19 @@ const CategoryTab = props => {
   }
   return (
     <div>
+      <Modal
+        title={null}
+        style={{ top: 20 }}
+        visible={selectedItem !== undefined}
+        footer={null}
+        onCancel={() => {
+          setSelectedItem(undefined);
+        }}
+      >
+        <p>Some contents...</p>
+        <p>Some contents...</p>
+        <p>Some contents...</p>
+      </Modal>
       {data.menuItems.map(item => {
         return (
           <div
@@ -261,7 +277,7 @@ const CategoryTab = props => {
               padding: 17,
               cursor: "pointer"
             }}
-            onClick={() => counter.addOrderItem(item)}
+            onClick={() => setSelectedItem(item)}
           >
             <div style={{ fontSize: 16, fontWeight: 600 }}>{item.title}</div>
             <div
