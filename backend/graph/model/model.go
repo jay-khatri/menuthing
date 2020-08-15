@@ -31,8 +31,9 @@ type Menu struct {
 
 type MenuItem struct {
 	Model
-	Title          *string `json:"title"`
-	Description    *string `json:"description"`
+	Title          *string  `json:"title"`
+	Description    *string  `json:"description"`
+	Price          *float64 `json: "price"`
 	MenuCategoryID ObjectID
 	MenuID         ObjectID
 }

@@ -29,6 +29,7 @@ export const GET_MENU_ITEMS = gql`
       title
       description
       id
+      price
     }
   }
 `;
