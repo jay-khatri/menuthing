@@ -3,7 +3,6 @@ import {
   BrowserRouter as Router,
   Switch,
   Route,
-  Redirect,
   Link,
   useParams
 } from "react-router-dom";
@@ -19,7 +18,7 @@ import {
 } from "./graph.js";
 import { ApolloProvider, useMutation, useQuery } from "@apollo/client";
 import PuffLoader from "react-spinners/PuffLoader";
-import { FaCircle, FaChevronDown } from "react-icons/fa";
+import { FaChevronDown } from "react-icons/fa";
 import { createContainer } from "unstated-next";
 import { Modal, Skeleton, Dropdown } from "antd";
 import { Link as ScrollLink, Element } from "react-scroll";
@@ -60,6 +59,9 @@ function App() {
       <OrderState.Provider>
         <Router>
           <Switch>
+            <Route path="/:menu_id/cart">
+              <CartPage />
+            </Route>
             <Route path="/:menu_id">
               <MenuPage />
             </Route>
@@ -72,6 +74,10 @@ function App() {
     </ApolloProvider>
   );
 }
+
+const CartPage = props => {
+  return <p>Checkout Page</p>;
+};
 
 function MenusPage() {
   const { loading, error, data } = useQuery(GET_MENUS);
@@ -96,6 +102,12 @@ const MenuCartItem = props => {
       id: props.order_item.menu_item_id
     }
   });
+  if (loading) {
+    return <div />;
+  }
+  if (error) {
+    return <div>{error.toString()}</div>;
+  }
   return (
     <div style={{ marginTop: 15, display: "flex", flexDirection: "row" }}>
       <div
@@ -144,6 +156,12 @@ const CartButton = props => {
       menu_id: menu_id
     }
   });
+  if (loading) {
+    return <div />;
+  }
+  if (error) {
+    return <div>{error.toString()}</div>;
+  }
   return (
     <Dropdown
       trigger={["click"]}
@@ -173,32 +191,34 @@ const CartButton = props => {
                 data.orderItems &&
                 data.orderItems.map(item => <MenuCartItem order_item={item} />)}
             </div>
-            <div
-              style={{
-                backgroundColor: "#F5744B",
-                height: 40,
-                width: "100%",
-                marginTop: 20,
-                marginLeft: "auto",
-                borderRadius: 20,
-                cursor: "pointer"
-              }}
-            >
+            <Link to={`/${menu_id}/cart`}>
               <div
                 style={{
-                  alignItems: "center",
-                  display: "flex",
-                  textAlign: "center",
-                  justifyContent: "center",
-                  height: "100%",
+                  backgroundColor: "#F5744B",
+                  height: 40,
                   width: "100%",
-                  color: "white",
-                  fontWeight: 600
+                  marginTop: 20,
+                  marginLeft: "auto",
+                  borderRadius: 20,
+                  cursor: "pointer"
                 }}
               >
-                Checkout / Edit Cart
+                <div
+                  style={{
+                    alignItems: "center",
+                    display: "flex",
+                    textAlign: "center",
+                    justifyContent: "center",
+                    height: "100%",
+                    width: "100%",
+                    color: "white",
+                    fontWeight: 600
+                  }}
+                >
+                  Checkout / Edit Cart
+                </div>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       }
@@ -225,7 +245,7 @@ const CartButton = props => {
             fontWeight: 600
           }}
         >
-          Cart &nbsp; <FaChevronDown />
+          Cart ({data?.orderItems?.length}) &nbsp; <FaChevronDown />
         </div>
       </div>
     </Dropdown>
@@ -233,7 +253,6 @@ const CartButton = props => {
 };
 function MenuPage() {
   const { menu_id } = useParams();
-  let { category_id } = useParams();
   const {
     loading: menu_loading,
     error: menu_error,
@@ -356,52 +375,13 @@ function MenuPage() {
   );
 }
 
-const OrderPage = props => {
-  let counter = OrderState.useContainer();
-  return (
-    <>
-      <div
-        style={{
-          width: "100%",
-          borderBottom: "1px solid #DDDDDD",
-          paddingBottom: 10
-        }}
-      >
-        Your Order
-      </div>
-      {counter.orders.map(i => (
-        <>
-          <div key={i.id} style={{ display: "flex", marginTop: 20 }}>
-            <div style={{ color: "black", fontSize: 16, fontWeight: 500 }}>
-              {i.title}
-            </div>
-            <div style={{ fontSize: 16, marginLeft: "auto", color: "#888888" }}>
-              ${i.price}
-            </div>
-          </div>
-          <div
-            style={{
-              color: "#F5744B",
-              fontSize: 14,
-              fontWeight: 500,
-              marginTop: 5
-            }}
-          >
-            EDIT
-          </div>
-        </>
-      ))}
-    </>
-  );
-};
-
 const AddOrderItemForm = props => {
   const { menu_id } = useParams();
   const { item } = props;
   let [count, setCount] = useState(1);
   let [error, setError] = useState(undefined);
-  const { handleSubmit, register, errors } = useForm();
-  const [addOrderItem, { data, loading }] = useMutation(ADD_ORDER_ITEM);
+  const { handleSubmit, register } = useForm();
+  const [addOrderItem, { loading }] = useMutation(ADD_ORDER_ITEM);
   const onSubmit = values => {
     addOrderItem({
       variables: {
@@ -423,7 +403,7 @@ const AddOrderItemForm = props => {
       setCount(1);
       setError(undefined);
     }
-  }, [item]);
+  }, [item, error]);
 
   if (!item) return <></>;
   return (
@@ -546,7 +526,7 @@ const AddOrderItemForm = props => {
             {loading ? (
               <PuffLoader />
             ) : (
-              "Add to Cart (" + "$" + (count * item.price).toString() + ")"
+              "Add to Cart ($" + (count * item.price).toString() + ")"
             )}
           </div>
         </button>
@@ -559,7 +539,6 @@ const AddOrderItemForm = props => {
 };
 
 const CategorySection = props => {
-  let counter = OrderState.useContainer();
   const { menu_id } = useParams();
   let [selectedItem, setSelectedItem] = useState(undefined);
   const { loading, error, data } = useQuery(GET_MENU_ITEMS, {
