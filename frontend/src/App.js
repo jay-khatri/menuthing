@@ -358,75 +358,34 @@ const AddOrderItemForm = props => {
 
   if (!item) return <></>;
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <div
-        style={{
-          padding: 20,
-          fontSize: 20,
-          color: "black",
-          fontWeight: 500
-        }}
-      >
+    <form onSubmit={handleSubmit(onSubmit)} className="menu-modal-form">
+      <h3>
         {item.title}
-      </div>
-      <div
-        style={{
-          padding: 20,
-          paddingTop: 0,
-          fontSize: 14,
-          color: "#555555"
-        }}
-      >
+      </h3>
+      <p>
         {item.description}
-      </div>
-      <div
-        style={{
-          padding: 20,
-          paddingTop: 0,
-          paddingBottom: 5,
-          fontSize: 16,
-          color: "black",
-          fontWeight: 500
-        }}
-      >
+      </p>
+      <h4>
         Special Instructions
-      </div>
-      <div
-        style={{
-          borderBottom: "1px solid #DDDDDD"
-        }}
-      ></div>
+      </h4>
+      <hr></hr>
       <input
-        style={{
-          width: "100%",
-          border: "none",
-          borderBottom: "1px solid #DDDDDD",
-          outline: "none",
-          padding: 20
-        }}
+        type="text"
         name="instructions"
         placeholder="Add instructions..."
         ref={register()}
       />
-      <div style={{ fontWeight: 500, display: "flex" }}>
+      <hr></hr>
+
+      <div class="btn-container">
         <div
-          style={{
-            display: "flex",
-            borderRadius: 50,
-            border: "1px solid #DDDDDD",
-            justifyContent: "space-between",
-            alignItems: "center",
-            height: 50,
-            margin: 20,
-            width: 175
-          }}
+            className="btn-left" 
         >
-          <div
+          <span
             style={{
               marginLeft: "auto",
               cursor: "pointer",
               textAlign: "center",
-              width: 60
             }}
             onClick={() => {
               if (count > 1) {
@@ -434,52 +393,29 @@ const AddOrderItemForm = props => {
               }
             }}
           >
-            -
-          </div>
-          <div style={{ textAlign: "center", width: 30 }}>{count}</div>
-          <div
+            –
+          </span>
+          <span style={{ textAlign: "center", width: 40, display: "inline-block"}}>{count}</span>
+          <span
             style={{
               marginRight: "auto",
               cursor: "pointer",
-              width: 60,
               textAlign: "center"
             }}
             onClick={() => setCount(count + 1)}
           >
             +
-          </div>
+          </span>
         </div>
         <button
           type="submit"
-          style={{
-            display: "flex",
-            borderRadius: 50,
-            border: "1px solid #DDDDDD",
-            backgroundColor: "#F5744B",
-            color: "white",
-            justifyContent: "space-between",
-            flexGrow: 1,
-            alignItems: "center",
-            height: 50,
-            margin: 20,
-            textAlign: "center",
-            outline: "none"
-          }}
+          className="btn-right btn-primary"
         >
-          <div
-            style={{
-              marginRight: "auto",
-              cursor: "pointer",
-              width: "100%",
-              fontWeight: 500
-            }}
-          >
-            {loading ? (
-              <PuffLoader />
-            ) : (
-              "Add to Cart ($" + (count * item.price).toString() + ")"
-            )}
-          </div>
+          {loading ? (
+            <PuffLoader />
+          ) : (
+            "Add to Cart $" + (count * item.price).toString()
+          )}
         </button>
       </div>
       {error && (

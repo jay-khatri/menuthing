@@ -50,6 +50,19 @@ body {
 }
 
 
+.btn-primary {
+	color: #fff;
+	font-weight: 600;
+	background-color: #F5744B;
+	border: 1px solid #F5744B;
+	font-size: 1rem;
+	line-height: 1rem;
+}
+.btn-primary:hover {
+	cursor: pointer;
+	opacity: 0.9;
+	transition: 0.3s;
+}
 
 .menu-page {
 	display: flex;
@@ -125,4 +138,74 @@ body {
 	font-size: 1rem;
 	color: #444;
 	line-height: 1.5rem;
+}
+
+.menu-modal-form {
+	padding: 1.5rem;
+}
+.menu-modal-form hr {
+	height: 1px;
+	background-color: #ddd;
+	border: none;
+	margin: 0 -1.5rem;
+}
+.menu-modal-form h3 {
+	font-size: 1.5rem;
+	font-weight: 600;
+	margin-top: 1.2rem;
+	margin-bottom: 0.5rem;
+}
+.menu-modal-form h4 {
+	font-size: 1rem;
+	font-weight: 500;
+}
+.menu-modal-form p {
+	font-size: 1rem;
+	color: #444;
+	margin-bottom: 2rem;
+}
+.menu-modal-form input[type=text] {
+	display: block;
+	border: none;
+	outline: none;
+	padding: 1.5rem 0;
+}
+
+.menu-modal-form .btn-container {
+	font-weight: 600; 
+	display: flex;
+	margin-top: 1.5rem;
+}
+.menu-modal-form .btn-container .btn-left, 
+.menu-modal-form .btn-container .btn-right 
+{
+	height: 3rem;
+	border-radius: 50px;
+	padding: 1rem;
+	font-size: 1rem;
+	line-height: 1rem;
+}
+
+.menu-modal-form .btn-container .btn-left {
+	border: 1px solid #DDDDDD;
+	margin-right: 0.5rem;
+	line-height: 1rem;
+	text-align: center;
+	width: calc(33.33% - 0.5rem);
+	background-color: transparent;
+}
+
+.menu-modal-form .btn-container .btn-left span {
+	padding: 0 0.5rem;
+	margin: 0 0.2rem;
+	-webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
+}
+.menu-modal-form .btn-container .btn-right {
+	margin-left: 0.5rem;
+	width: calc(66.66% - 0.5rem);
 }
