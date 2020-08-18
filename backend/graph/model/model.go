@@ -21,12 +21,28 @@ type Model struct {
 	DeletedAt *time.Time
 }
 
+type Order struct {
+	Model
+	SessionID  *string      `json:"session_id"`
+	OrderItems []*OrderItem `gorm:"foreignkey:OrderID:association_foreignkey:ID"`
+	MenuID     ObjectID
+}
+
+type OrderItem struct {
+	Model
+	MenuItemID   ObjectID `json:"menu_item_id"`
+	Quantity     *int     `json:"quantity"`
+	Instructions *string  `json:"instructions"`
+	OrderID      ObjectID
+}
+
 type Menu struct {
 	Model
 	Title          *string         `json:"title"`
 	Description    *string         `json:"description"`
 	MenuItems      []*MenuItem     `gorm:"foreignkey:MenuID:association_foreignkey:ID"`
 	MenuCategories []*MenuCategory `gorm:"foreignkey:MenuID:association_foreignkey:ID"`
+	Orders         []*OrderItem    `gorm:"foreignkey:MenuID:association_foreignkey:ID"`
 }
 
 type MenuItem struct {
