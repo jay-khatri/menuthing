@@ -8,6 +8,13 @@ type Menu {
   description: String!
 }
 
+type OrderItem {
+  id: ID!
+  menu_item_id: ID!
+  quantity: Int!
+  instructions: String!
+}
+
 type MenuItem {
   id: ID!
   title: String!
@@ -23,8 +30,10 @@ type MenuCategory {
 type Query {
   menus: [Menu!]
   menu(id: ID!): Menu
+  menuItem(id: ID!): MenuItem
   menuItems(menu_id: ID!, menu_category_id: ID): [MenuItem!]!
   menuCategories(menu_id: ID!): [MenuCategory!]!
+  orderItems(menu_id: ID!): [OrderItem!]!
 }
 
 type Mutation {
@@ -42,4 +51,11 @@ type Mutation {
     title: String!
     menu_id: ID!
   ): MenuCategory
+
+  addOrderItem(
+    menu_id: ID!
+    menu_item_id: ID!
+    quantity: Int!
+    instructions: String!
+  ): OrderItem
 }

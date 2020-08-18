@@ -17,6 +17,18 @@ body {
 	}
 }
 
+.ant-modal-content {
+	border-radius: 8px;
+}
+
+.category-link:hover {
+	color: black !important;
+}
+
+.ant-modal-body {
+	padding: 0px;
+}
+
 .App-header {
 	background-color: #282c34;
 	min-height: 100vh;

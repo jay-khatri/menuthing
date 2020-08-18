@@ -5,6 +5,8 @@ package graph
 
 import (
 	"context"
+	"fmt"
+	"log"
 
 	"github.com/jay-khatri/menuthing/backend/graph/generated"
 	"github.com/jay-khatri/menuthing/backend/graph/model"
@@ -47,6 +49,44 @@ func (r *mutationResolver) CreateMenuCategory(ctx context.Context, title string,
 	return menuCategory, nil
 }
 
+func (r *mutationResolver) AddOrderItem(ctx context.Context, menuID model.ObjectID, menuItemID model.ObjectID, quantity int, instructions string) (*model.OrderItem, error) {
+	// retrieve/create an order unique to a user and menu.
+	sessionID := ctx.Value("id").(string)
+	order := &model.Order{}
+	res := r.DB.Where(&model.Order{
+		SessionID: &sessionID,
+		MenuID:    menuID}).First(&order)
+	if err := res.Error; err != nil || res.RecordNotFound() {
+		log.Println("order doesn't exist")
+		order.SessionID = &sessionID
+		order.MenuID = menuID
+		if err := r.DB.Create(order).Error; err != nil {
+			return nil, e.Wrap(err, "error creating menu")
+		}
+	}
+	// make sure there aren't multiple orders with the same menu item.
+	orderItems := []*model.OrderItem{}
+	if res := r.DB.Model(order).Related(&orderItems); res.Error != nil {
+		return nil, fmt.Errorf("error getting related order items: %v", res)
+	}
+	for _, item := range orderItems {
+		if item.MenuItemID == menuItemID {
+			return nil, fmt.Errorf("There already exists an order item with this menu item")
+		}
+	}
+	//create
+	newOrderItem := &model.OrderItem{
+		OrderID:      order.ID,
+		MenuItemID:   menuItemID,
+		Quantity:     &quantity,
+		Instructions: &instructions,
+	}
+	if err := r.DB.Create(newOrderItem).Error; err != nil {
+		return nil, fmt.Errorf("error creating secret association for repo: " + err.Error())
+	}
+	return newOrderItem, nil
+}
+
 func (r *queryResolver) Menus(ctx context.Context) ([]*model.Menu, error) {
 	menus := []*model.Menu{}
 	res := r.DB.Find(&menus)
@@ -65,6 +105,15 @@ func (r *queryResolver) Menu(ctx context.Context, id model.ObjectID) (*model.Men
 	return menu, nil
 }
 
+func (r *queryResolver) MenuItem(ctx context.Context, id model.ObjectID) (*model.MenuItem, error) {
+	menuItem := &model.MenuItem{}
+	res := r.DB.Where(&model.MenuItem{Model: model.Model{ID: id}}).First(&menuItem)
+	if err := res.Error; err != nil || res.RecordNotFound() {
+		return nil, e.Wrap(err, "can't get menu item")
+	}
+	return menuItem, nil
+}
+
 func (r *queryResolver) MenuItems(ctx context.Context, menuID model.ObjectID, menuCategoryID *model.ObjectID) ([]*model.MenuItem, error) {
 	menu, err := r.Query().Menu(ctx, menuID)
 	if err != nil {
@@ -75,16 +124,7 @@ func (r *queryResolver) MenuItems(ctx context.Context, menuID model.ObjectID, me
 	if err := res.Error; err != nil || res.RecordNotFound() {
 		return nil, e.Wrap(err, "can't get related menu items")
 	}
-	// TODO: fix this.
-	parsedItems := []*model.MenuItem{}
-	for _, m := range menuItems {
-		if menuCategoryID == nil {
-			parsedItems = append(parsedItems, m)
-		} else if m.MenuCategoryID == *menuCategoryID {
-			parsedItems = append(parsedItems, m)
-		}
-	}
-	return parsedItems, nil
+	return menuItems, nil
 }
 
 func (r *queryResolver) MenuCategories(ctx context.Context, menuID model.ObjectID) ([]*model.MenuCategory, error) {
@@ -98,6 +138,22 @@ func (r *queryResolver) MenuCategories(ctx context.Context, menuID model.ObjectI
 		return nil, e.Wrap(err, "can't get related menu categories")
 	}
 	return menuCategories, nil
+}
+
+func (r *queryResolver) OrderItems(ctx context.Context, menuID model.ObjectID) ([]*model.OrderItem, error) {
+	sessionID := ctx.Value("id").(string)
+	order := &model.Order{}
+	res := r.DB.Where(&model.Order{
+		SessionID: &sessionID,
+		MenuID:    menuID}).First(&order)
+	if err := res.Error; res.Error != nil {
+		return nil, e.Wrap(err, "error querying order")
+	}
+	orderItems := []*model.OrderItem{}
+	if res := r.DB.Model(order).Related(&orderItems); res.Error != nil {
+		return nil, e.Wrap(res.Error, "error getting related order items")
+	}
+	return orderItems, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

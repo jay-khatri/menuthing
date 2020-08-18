@@ -28,6 +28,8 @@ func SetupDB() *gorm.DB {
 	log.Println("Auto migrating database...")
 	db.AutoMigrate(
 		&model.Menu{},
+		&model.Order{},
+		&model.OrderItem{},
 		&model.MenuItem{},
 		&model.MenuCategory{},
 	)

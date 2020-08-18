@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gorilla/handlers"
 	"github.com/rs/cors"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -12,11 +13,14 @@ import (
 	"github.com/jay-khatri/menuthing/backend/database"
 	"github.com/jay-khatri/menuthing/backend/graph"
 	"github.com/jay-khatri/menuthing/backend/graph/generated"
+	"github.com/jay-khatri/menuthing/backend/sessions"
 )
 
 const defaultPort = "8080"
 
 func main() {
+	router := http.NewServeMux()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
@@ -30,15 +34,17 @@ func main() {
 		AllowedHeaders:   []string{"id-token", "content-type"},
 	})
 
+	// has ServeHTTP method, interface is of type http.Handler
 	srv := handler.NewDefaultServer(
 		generated.NewExecutableSchema(
 			generated.Config{Resolvers: &graph.Resolver{
 				DB: db,
 			}}))
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", c.Handler(srv))
+	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	router.Handle("/query", sessions.HandleUserSession(srv))
 
+	loggedRouter := handlers.LoggingHandler(os.Stdout, router)
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServe(":"+port, c.Handler(loggedRouter)))
 }

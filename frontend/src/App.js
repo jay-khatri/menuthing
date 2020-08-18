@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Switch,
@@ -11,17 +11,38 @@ import {
   client,
   GET_MENU_ITEMS,
   GET_MENU_CATEGORIES,
+  GET_ORDER_ITEMS,
+  ADD_ORDER_ITEM,
   GET_MENU,
+  GET_MENU_ITEM,
   GET_MENUS
 } from "./graph.js";
-import { ApolloProvider, useQuery } from "@apollo/client";
+import { ApolloProvider, useMutation, useQuery } from "@apollo/client";
 import PuffLoader from "react-spinners/PuffLoader";
-import { FaCircle } from "react-icons/fa";
+import { FaCircle, FaChevronDown } from "react-icons/fa";
 import { createContainer } from "unstated-next";
-import { Modal } from "antd";
+import { Modal, Skeleton, Dropdown } from "antd";
+import { Link as ScrollLink, Element } from "react-scroll";
+import { useForm } from "react-hook-form";
 
 import "antd/dist/antd.css";
 import "./App.css";
+
+const FullPageLoader = props => {
+  return (
+    <div
+      style={{
+        height: "100vh",
+        width: "100vw",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }}
+    >
+      <PuffLoader />
+    </div>
+  );
+};
 
 function useOrderState(initialState = []) {
   let [orders, setOrder] = useState(initialState);
@@ -39,9 +60,6 @@ function App() {
       <OrderState.Provider>
         <Router>
           <Switch>
-            <Route path="/:menu_id/category/:category_id">
-              <MenuPage />
-            </Route>
             <Route path="/:menu_id">
               <MenuPage />
             </Route>
@@ -58,7 +76,7 @@ function App() {
 function MenusPage() {
   const { loading, error, data } = useQuery(GET_MENUS);
   if (loading) {
-    return <PuffLoader />;
+    return <FullPageLoader />;
   }
   if (error) {
     return <p>{JSON.stringify(error)}</p>;
@@ -72,6 +90,147 @@ function MenusPage() {
   );
 }
 
+const MenuCartItem = props => {
+  const { loading, error, data } = useQuery(GET_MENU_ITEM, {
+    variables: {
+      id: props.order_item.menu_item_id
+    }
+  });
+  return (
+    <div style={{ marginTop: 15, display: "flex", flexDirection: "row" }}>
+      <div
+        style={{
+          display: "flex",
+          margin: 10,
+          marginTop: 0,
+          color: "#F5744B",
+          fontWeight: 500
+        }}
+      >
+        x{props && props.order_item && props.order_item.quantity}
+      </div>
+      <div style={{ width: "100%" }}>
+        <div
+          style={{
+            fontSize: 16,
+            color: "black",
+            display: "flex",
+            width: "100%",
+            fontWeight: 500
+          }}
+        >
+          <div>{data && data.menuItem && data.menuItem.title}</div>
+          <div style={{ marginLeft: "auto", color: "#F5744B" }}>
+            $
+            {data &&
+              data.menuItem &&
+              data.menuItem.price * props.order_item.quantity}
+          </div>
+        </div>
+        <div style={{ display: "flex", width: "100%" }}>
+          <div>
+            {props && props.order_item && props.order_item.instructions}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CartButton = props => {
+  const { menu_id } = useParams();
+  const { loading, error, data } = useQuery(GET_ORDER_ITEMS, {
+    variables: {
+      menu_id: menu_id
+    }
+  });
+  return (
+    <Dropdown
+      trigger={["click"]}
+      overlay={
+        <div
+          style={{
+            width: 400,
+            backgroundColor: "white",
+            boxShadow: "0px 0px 2px #888888",
+            padding: 15,
+            borderRadius: 8,
+            height: "50%"
+          }}
+        >
+          <div>
+            <div
+              style={{
+                color: "black",
+                fontWeight: 500,
+                fontSize: 18
+              }}
+            >
+              Your Cart
+            </div>
+            <div style={{ height: "50vh", overflowY: "scroll" }}>
+              {data &&
+                data.orderItems &&
+                data.orderItems.map(item => <MenuCartItem order_item={item} />)}
+            </div>
+            <div
+              style={{
+                backgroundColor: "#F5744B",
+                height: 40,
+                width: "100%",
+                marginTop: 20,
+                marginLeft: "auto",
+                borderRadius: 20,
+                cursor: "pointer"
+              }}
+            >
+              <div
+                style={{
+                  alignItems: "center",
+                  display: "flex",
+                  textAlign: "center",
+                  justifyContent: "center",
+                  height: "100%",
+                  width: "100%",
+                  color: "white",
+                  fontWeight: 600
+                }}
+              >
+                Checkout / Edit Cart
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+      placement="bottomLeft"
+    >
+      <div
+        style={{
+          backgroundColor: "#F5744B",
+          height: 40,
+          width: 100,
+          marginLeft: "auto",
+          borderRadius: 20,
+          cursor: "pointer"
+        }}
+      >
+        <div
+          style={{
+            alignItems: "center",
+            display: "flex",
+            textAlign: "center",
+            justifyContent: "center",
+            height: "100%",
+            color: "white",
+            fontWeight: 600
+          }}
+        >
+          Cart &nbsp; <FaChevronDown />
+        </div>
+      </div>
+    </Dropdown>
+  );
+};
 function MenuPage() {
   const { menu_id } = useParams();
   let { category_id } = useParams();
@@ -90,7 +249,7 @@ function MenuPage() {
     }
   });
   if (loading || menu_loading) {
-    return <PuffLoader />;
+    return <FullPageLoader />;
   }
   if (error || menu_error) {
     return (
@@ -98,11 +257,6 @@ function MenuPage() {
         <p>{JSON.stringify(error)}</p>
         <p>{JSON.stringify(menu_error)}</p>
       </div>
-    );
-  }
-  if (!category_id && data.menuCategories && data.menuCategories.length) {
-    return (
-      <Redirect to={`/${menu_id}/category/${data.menuCategories[0].id}`} />
     );
   }
   return (
@@ -113,83 +267,89 @@ function MenuPage() {
           display: "flex",
           padding: 40,
           paddingLeft: 80,
-          width: "70%",
-          overflowY: "auto"
+          width: "100%"
         }}
       >
-        <div style={{ marginBottom: "auto", fontSize: 15, height: "10%" }}>
+        <div
+          style={{
+            display: "flex",
+            marginBottom: "auto",
+            fontSize: 15,
+            height: "7%",
+            justifyContent: "center",
+            alignItems: "center"
+          }}
+        >
           <div>{menu_data.menu.title}</div>
+          <CartButton />
         </div>
         <div style={{ height: "90%", fontSize: 30 }}>
-          <div style={{ marginBottom: 20 }}>{menu_data.menu.title} Menu</div>
           <div
-            style={{ marginBottom: 40, display: "flex", flexDirection: "row" }}
+            style={{
+              fontWeight: 500,
+              color: "black",
+              marginBottom: 30,
+              width: "100%"
+            }}
+          >
+            {menu_data.menu.title} Menu
+          </div>
+          <div
+            style={{
+              borderBottom: "1px solid #DDDDDD",
+              marginRight: 40,
+              marginBottom: 40,
+              display: "flex",
+              flexDirection: "row"
+            }}
           >
             {data.menuCategories.map(category => {
-              const notSelected = category_id !== category.id;
               return (
-                <div
+                <ScrollLink
+                  activeClass="active"
+                  className="category-link"
+                  smooth={true}
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    marginRight: 30
+                    fontSize: 16,
+                    textDecoration: "none",
+                    fontWeight: "inherit",
+                    color: "#888888"
                   }}
+                  to={category.id}
+                  key={category.id}
                 >
-                  <Link
-                    style={{
-                      fontSize: 20,
-                      textDecoration: "none",
-                      fontWeight: notSelected ? "inherit" : 500,
-                      color: notSelected ? "#888888" : "black"
-                    }}
-                    to={`/${menu_id}/category/${category.id}`}
-                  >
-                    {category.title}
-                  </Link>
                   <div
                     style={{
-                      width: "100%",
                       display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center"
+                      flexDirection: "column",
+                      marginRight: 30,
+                      marginBottom: 10
                     }}
                   >
-                    <FaCircle
-                      style={{
-                        visibility: notSelected && "hidden",
-                        color: "#F5744B",
-                        marginTop: 10,
-                        height: 10
-                      }}
-                    />
+                    {category.title}
                   </div>
-                </div>
+                </ScrollLink>
               );
             })}
           </div>
-          <CategoryTab />
-        </div>
-      </div>
-      <div
-        style={{
-          flexDirection: "column",
-          display: "flex",
-          padding: 40,
-          width: "30%",
-          borderLeft: "1px solid #DDDDDD"
-        }}
-      >
-        <div
-          style={{ marginBottom: "auto", fontSize: 15, height: "10%" }}
-        ></div>
-        <div
-          style={{
-            fontSize: 30,
-            height: "90%",
-            width: "100%"
-          }}
-        >
-          <OrderPage />
+          {data.menuCategories.map(category => {
+            return (
+              <Element name={category.id}>
+                <div
+                  style={{ marginBottom: 30 }}
+                  id={category.id}
+                  key={category.id}
+                >
+                  <div
+                    style={{ color: "black", fontSize: 24, fontWeight: 500 }}
+                  >
+                    {category.title}
+                  </div>
+                  <CategorySection category_id={category.id} />
+                </div>
+              </Element>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -211,8 +371,10 @@ const OrderPage = props => {
       </div>
       {counter.orders.map(i => (
         <>
-          <div style={{ display: "flex", marginTop: 20 }}>
-            <div style={{ fontSize: 16, fontWeight: 500 }}>{i.title}</div>
+          <div key={i.id} style={{ display: "flex", marginTop: 20 }}>
+            <div style={{ color: "black", fontSize: 16, fontWeight: 500 }}>
+              {i.title}
+            </div>
             <div style={{ fontSize: 16, marginLeft: "auto", color: "#888888" }}>
               ${i.price}
             </div>
@@ -233,18 +395,181 @@ const OrderPage = props => {
   );
 };
 
-const CategoryTab = props => {
+const AddOrderItemForm = props => {
+  const { menu_id } = useParams();
+  const { item } = props;
+  let [count, setCount] = useState(1);
+  let [error, setError] = useState(undefined);
+  const { handleSubmit, register, errors } = useForm();
+  const [addOrderItem, { data, loading }] = useMutation(ADD_ORDER_ITEM);
+  const onSubmit = values => {
+    addOrderItem({
+      variables: {
+        menu_id: menu_id,
+        menu_item_id: item.id,
+        quantity: count,
+        instructions: values.instructions
+      }
+    })
+      .then(resp => console.log(resp))
+      .catch(err => setError(err));
+  };
+
+  useEffect(() => {
+    if (error) {
+      setError(error.toString());
+    }
+    if (!item) {
+      setCount(1);
+      setError(undefined);
+    }
+  }, [item]);
+
+  if (!item) return <></>;
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <div
+        style={{
+          padding: 20,
+          fontSize: 20,
+          color: "black",
+          fontWeight: 500
+        }}
+      >
+        {item.title}
+      </div>
+      <div
+        style={{
+          padding: 20,
+          paddingTop: 0,
+          fontSize: 14,
+          color: "#555555"
+        }}
+      >
+        {item.description}
+      </div>
+      <div
+        style={{
+          padding: 20,
+          paddingTop: 0,
+          paddingBottom: 5,
+          fontSize: 16,
+          color: "black",
+          fontWeight: 500
+        }}
+      >
+        Special Instructions
+      </div>
+      <div
+        style={{
+          borderBottom: "1px solid #DDDDDD"
+        }}
+      ></div>
+      <input
+        style={{
+          width: "100%",
+          border: "none",
+          borderBottom: "1px solid #DDDDDD",
+          outline: "none",
+          padding: 20
+        }}
+        name="instructions"
+        placeholder="Add instructions..."
+        ref={register()}
+      />
+      <div style={{ fontWeight: 500, display: "flex" }}>
+        <div
+          style={{
+            display: "flex",
+            borderRadius: 50,
+            border: "1px solid #DDDDDD",
+            justifyContent: "space-between",
+            alignItems: "center",
+            height: 50,
+            margin: 20,
+            width: 175
+          }}
+        >
+          <div
+            style={{
+              marginLeft: "auto",
+              cursor: "pointer",
+              textAlign: "center",
+              width: 60
+            }}
+            onClick={() => {
+              if (count > 1) {
+                setCount(count - 1);
+              }
+            }}
+          >
+            -
+          </div>
+          <div style={{ textAlign: "center", width: 30 }}>{count}</div>
+          <div
+            style={{
+              marginRight: "auto",
+              cursor: "pointer",
+              width: 60,
+              textAlign: "center"
+            }}
+            onClick={() => setCount(count + 1)}
+          >
+            +
+          </div>
+        </div>
+        <button
+          type="submit"
+          style={{
+            display: "flex",
+            borderRadius: 50,
+            border: "1px solid #DDDDDD",
+            backgroundColor: "#F5744B",
+            color: "white",
+            justifyContent: "space-between",
+            flexGrow: 1,
+            alignItems: "center",
+            height: 50,
+            margin: 20,
+            textAlign: "center",
+            outline: "none"
+          }}
+        >
+          <div
+            style={{
+              marginRight: "auto",
+              cursor: "pointer",
+              width: "100%",
+              fontWeight: 500
+            }}
+          >
+            {loading ? (
+              <PuffLoader />
+            ) : (
+              "Add to Cart (" + "$" + (count * item.price).toString() + ")"
+            )}
+          </div>
+        </button>
+      </div>
+      {error && (
+        <div style={{ padding: 20, paddingTop: 5 }}>{error.toString()}</div>
+      )}
+    </form>
+  );
+};
+
+const CategorySection = props => {
   let counter = OrderState.useContainer();
-  const { menu_id, category_id } = useParams();
+  const { menu_id } = useParams();
   let [selectedItem, setSelectedItem] = useState(undefined);
   const { loading, error, data } = useQuery(GET_MENU_ITEMS, {
     variables: {
       menu_id: menu_id,
-      menu_category_id: category_id
+      menu_category_id: props.category_id
     }
   });
   if (loading) {
-    return <PuffLoader />;
+    return <Skeleton />;
   }
   if (error) {
     return <p>{JSON.stringify(error)}</p>;
@@ -253,56 +578,64 @@ const CategoryTab = props => {
     <div>
       <Modal
         title={null}
-        style={{ top: 20 }}
+        style={{ width: 500 }}
         visible={selectedItem !== undefined}
         footer={null}
         onCancel={() => {
           setSelectedItem(undefined);
         }}
       >
-        <p>Some contents...</p>
-        <p>Some contents...</p>
-        <p>Some contents...</p>
+        <AddOrderItemForm item={selectedItem} />
       </Modal>
-      {data.menuItems.map(item => {
-        return (
-          <div
-            style={{
-              marginTop: 15,
-              border: "1px solid #DDDDDD",
-              borderRadius: 8,
-              overflowY: "auto",
-              height: "100%",
-              width: 500,
-              padding: 17,
-              cursor: "pointer"
-            }}
-            onClick={() => setSelectedItem(item)}
-          >
-            <div style={{ fontSize: 16, fontWeight: 600 }}>{item.title}</div>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap"
+        }}
+      >
+        {data.menuItems.map(item => {
+          return (
             <div
               style={{
-                marginTop: 10,
-                fontSize: 16,
-                fontWeight: 500,
-                color: "#6F6F6F"
+                marginTop: 15,
+                marginRight: 25,
+                border: "1px solid #DDDDDD",
+                borderRadius: 8,
+                height: "100%",
+                width: 500,
+                padding: 17,
+                cursor: "pointer"
               }}
+              onClick={() => setSelectedItem(item)}
+              key={item.id}
             >
-              {item.description}
+              <div style={{ fontSize: 16, fontWeight: 600, color: "black" }}>
+                {item.title}
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  fontSize: 16,
+                  fontWeight: 400,
+                  color: "#444444"
+                }}
+              >
+                {item.description}
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: "#F5744B"
+                }}
+              >
+                ${item.price}
+              </div>
             </div>
-            <div
-              style={{
-                marginTop: 10,
-                fontSize: 16,
-                fontWeight: 600,
-                color: "#F5744B"
-              }}
-            >
-              ${item.price}
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 };
