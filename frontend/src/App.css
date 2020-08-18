@@ -72,8 +72,8 @@ body {
 .menu-page-container {
 	flex-direction: column;
 	display: flex;
-	padding: 0 12rem 5rem;
-	width: 100%;
+	padding: 0 15% 5rem;
+	max-width: 1440px;
 }
 
 .nav-bar {
@@ -208,4 +208,19 @@ body {
 .menu-modal-form .btn-container .btn-right {
 	margin-left: 0.5rem;
 	width: calc(66.66% - 0.5rem);
+}
+
+@media only screen and (max-width: 767.99px) {
+	.menu-page-container {
+		padding: 0 5% 3rem;
+	}
+}
+
+@media only screen and (max-width: 575.99px) {
+	.menu-item,
+	.menu-item:nth-child(even),
+	.menu-item:nth-child(odd) {
+		width: 100%;
+		margin: 0 0 1rem;
+	}
 }
