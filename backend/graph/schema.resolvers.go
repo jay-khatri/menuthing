@@ -146,8 +146,13 @@ func (r *queryResolver) OrderItems(ctx context.Context, menuID model.ObjectID) (
 	res := r.DB.Where(&model.Order{
 		SessionID: &sessionID,
 		MenuID:    menuID}).First(&order)
-	if err := res.Error; res.Error != nil {
-		return nil, e.Wrap(err, "error querying order")
+	if err := res.Error; err != nil || res.RecordNotFound() {
+		log.Println("order doesn't exist")
+		order.SessionID = &sessionID
+		order.MenuID = menuID
+		if err := r.DB.Create(order).Error; err != nil {
+			return nil, e.Wrap(err, "error creating menu")
+		}
 	}
 	orderItems := []*model.OrderItem{}
 	if res := r.DB.Model(order).Related(&orderItems); res.Error != nil {
