@@ -560,7 +560,7 @@ const CategorySection = props => {
         style={{ width: 500 }}
         visible={selectedItem !== undefined}
         footer={null}
-        onCancel={() => {
+        nCancel={() => {
           setSelectedItem(undefined);
         }}
       >

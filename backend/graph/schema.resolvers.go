@@ -6,7 +6,6 @@ package graph
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/jay-khatri/menuthing/backend/graph/generated"
 	"github.com/jay-khatri/menuthing/backend/graph/model"
@@ -57,7 +56,6 @@ func (r *mutationResolver) AddOrderItem(ctx context.Context, menuID model.Object
 		SessionID: &sessionID,
 		MenuID:    menuID}).First(&order)
 	if err := res.Error; err != nil || res.RecordNotFound() {
-		log.Println("order doesn't exist")
 		order.SessionID = &sessionID
 		order.MenuID = menuID
 		if err := r.DB.Create(order).Error; err != nil {
@@ -115,12 +113,12 @@ func (r *queryResolver) MenuItem(ctx context.Context, id model.ObjectID) (*model
 }
 
 func (r *queryResolver) MenuItems(ctx context.Context, menuID model.ObjectID, menuCategoryID *model.ObjectID) ([]*model.MenuItem, error) {
-	menu, err := r.Query().Menu(ctx, menuID)
-	if err != nil {
-		return nil, e.Wrap(err, "can't fetch menu")
-	}
 	menuItems := []*model.MenuItem{}
-	res := r.DB.Model(menu).Related(&menuItems)
+	query := &model.MenuItem{MenuID: menuID}
+	if menuCategoryID != nil {
+		query.MenuCategoryID = *menuCategoryID
+	}
+	res := r.DB.Where(query).Find(&menuItems)
 	if err := res.Error; err != nil || res.RecordNotFound() {
 		return nil, e.Wrap(err, "can't get related menu items")
 	}
@@ -147,7 +145,6 @@ func (r *queryResolver) OrderItems(ctx context.Context, menuID model.ObjectID) (
 		SessionID: &sessionID,
 		MenuID:    menuID}).First(&order)
 	if err := res.Error; err != nil || res.RecordNotFound() {
-		log.Println("order doesn't exist")
 		order.SessionID = &sessionID
 		order.MenuID = menuID
 		if err := r.DB.Create(order).Error; err != nil {
