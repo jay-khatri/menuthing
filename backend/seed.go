@@ -25,6 +25,7 @@ func seed(resolver *graph.Resolver) {
 		if err != nil {
 			log.Fatalf("error creating category: %v", err)
 		}
+		// Create some menu items for each category.
 		for _, item := range []int{1, 2, 3, 4, 5, 6, 7, 8} {
 			_, err := resolver.Mutation().CreateMenuItem(ctx, categories[i]+" "+strconv.Itoa(item), "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation", 1.23, menu.ID, category.ID)
 			if err != nil {
@@ -33,6 +34,5 @@ func seed(resolver *graph.Resolver) {
 		}
 		categoryIDs = append(categoryIDs, category.ID)
 	}
-	// Create some menu items for each category.
 	log.Println("done seeding database")
 }
