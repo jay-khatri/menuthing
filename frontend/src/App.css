@@ -21,10 +21,6 @@ body {
 	border-radius: 8px;
 }
 
-.category-link:hover {
-	color: black !important;
-}
-
 .ant-modal-body {
 	padding: 0px;
 }
@@ -51,4 +47,82 @@ body {
 	to {
 		transform: rotate(360deg);
 	}
+}
+
+
+
+.menu-page {
+	display: flex;
+	flex-direction: row;
+	height: 100vh;
+}
+.menu-page-container {
+	flex-direction: column;
+	display: flex;
+	padding: 0 12rem 5rem;
+	width: 100%;
+}
+
+.nav-bar {
+	display: flex;
+	font-size: 1rem;
+	justify-content: center;
+	align-items: center;
+	padding: 1.5rem 0;
+	margin-bottom: 2rem;
+}
+.nav-bar h3 {
+	font-size: 1.2rem;
+	margin: 0;
+}
+
+.menu-page-content h1 {
+	font-size: 2rem;
+	margin: 0 0 2rem;
+}
+.menu-page-content h2 {
+	font-size: 1.5rem;
+	font-weight: 500;
+	margin: 0 0 1.5rem;
+}
+
+.menu-nav-bar {
+	border-bottom: 1px solid #DDDDDD;
+	margin-bottom: 2rem;
+	display: flex;
+	flex-direction: row;
+}
+.menu-nav-bar .category-link {
+	color: #121421;
+	font-size: 1rem;
+	text-decoration: none;
+	margin: 0 2rem 1rem 0; 
+}
+.menu-nav-bar .category-link:hover {
+	color: #666;
+	transition: 0.3s;
+}
+
+.menu-item {
+	margin: 0 0 2rem;
+	border: 1px solid #DDDDDD;
+	border-radius: 0.5rem;
+	padding: 1.2rem;
+	cursor: pointer;
+	width: calc(50% - 1rem);
+}
+.menu-item:nth-child(even) {
+	margin-left: 1rem;
+}
+.menu-item:nth-child(odd) {
+	margin-right: 1rem;
+}
+.menu-item:hover {
+	border-color: #000;
+	transition: 0.3s;
+}
+.menu-item p {
+	font-size: 1rem;
+	color: #444;
+	line-height: 1.5rem;
 }

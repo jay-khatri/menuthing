@@ -279,74 +279,27 @@ function MenuPage() {
     );
   }
   return (
-    <div style={{ display: "flex", flexDirection: "row", height: "100vh" }}>
-      <div
-        style={{
-          flexDirection: "column",
-          display: "flex",
-          padding: 40,
-          paddingLeft: 80,
-          width: "100%"
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            marginBottom: "auto",
-            fontSize: 15,
-            height: "7%",
-            justifyContent: "center",
-            alignItems: "center"
-          }}
-        >
-          <div>{menu_data.menu.title}</div>
+    <div className="menu-page">
+      <div className="menu-page-container">
+        <div className="nav-bar">
+          <h3>{menu_data.menu.title}</h3>
           <CartButton />
         </div>
-        <div style={{ height: "90%", fontSize: 30 }}>
-          <div
-            style={{
-              fontWeight: 500,
-              color: "black",
-              marginBottom: 30,
-              width: "100%"
-            }}
-          >
+        <div className="menu-page-content">
+          <h1>
             {menu_data.menu.title} Menu
-          </div>
-          <div
-            style={{
-              borderBottom: "1px solid #DDDDDD",
-              marginRight: 40,
-              marginBottom: 40,
-              display: "flex",
-              flexDirection: "row"
-            }}
-          >
+          </h1>
+          <div class="menu-nav-bar">
             {data.menuCategories.map(category => {
               return (
                 <ScrollLink
                   activeClass="active"
                   className="category-link"
                   smooth={true}
-                  style={{
-                    fontSize: 16,
-                    textDecoration: "none",
-                    fontWeight: "inherit",
-                    color: "#888888"
-                  }}
                   to={category.id}
                   key={category.id}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      marginRight: 30,
-                      marginBottom: 10
-                    }}
-                  >
-                    {category.title}
-                  </div>
+                {category.title}
                 </ScrollLink>
               );
             })}
@@ -359,11 +312,9 @@ function MenuPage() {
                   id={category.id}
                   key={category.id}
                 >
-                  <div
-                    style={{ color: "black", fontSize: 24, fontWeight: 500 }}
-                  >
+                  <h2>
                     {category.title}
-                  </div>
+                  </h2>
                   <CategorySection category_id={category.id} />
                 </div>
               </Element>
@@ -575,32 +526,16 @@ const CategorySection = props => {
         {data.menuItems.map(item => {
           return (
             <div
-              style={{
-                marginTop: 15,
-                marginRight: 25,
-                border: "1px solid #DDDDDD",
-                borderRadius: 8,
-                height: "100%",
-                width: 500,
-                padding: 17,
-                cursor: "pointer"
-              }}
               onClick={() => setSelectedItem(item)}
               key={item.id}
+              className="menu-item"
             >
-              <div style={{ fontSize: 16, fontWeight: 600, color: "black" }}>
+              <h4 style={{ fontSize: 16, fontWeight: 600, color: "black" }}>
                 {item.title}
-              </div>
-              <div
-                style={{
-                  marginTop: 10,
-                  fontSize: 16,
-                  fontWeight: 400,
-                  color: "#444444"
-                }}
-              >
+              </h4>
+              <p>
                 {item.description}
-              </div>
+              </p>
               <div
                 style={{
                   marginTop: 10,
