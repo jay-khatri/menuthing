@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -19,14 +20,25 @@ import (
 const defaultPort = "8080"
 
 func main() {
+	seedFlag := flag.Bool("s", false, "seed the database")
+	flag.Parse()
+
+	db := database.SetupDB()
+	resolver := &graph.Resolver{
+		DB: db,
+	}
+
+	if *seedFlag {
+		seed(resolver)
+		return
+	}
+
 	router := http.NewServeMux()
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
 	}
-
-	db := database.SetupDB()
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{os.Getenv("FRONTEND_URI")},
@@ -37,9 +49,7 @@ func main() {
 	// has ServeHTTP method, interface is of type http.Handler
 	srv := handler.NewDefaultServer(
 		generated.NewExecutableSchema(
-			generated.Config{Resolvers: &graph.Resolver{
-				DB: db,
-			}}))
+			generated.Config{Resolvers: resolver}))
 
 	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	router.Handle("/query", sessions.HandleUserSession(srv))
