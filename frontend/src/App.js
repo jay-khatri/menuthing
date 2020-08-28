@@ -279,74 +279,27 @@ function MenuPage() {
     );
   }
   return (
-    <div style={{ display: "flex", flexDirection: "row", height: "100vh" }}>
-      <div
-        style={{
-          flexDirection: "column",
-          display: "flex",
-          padding: 40,
-          paddingLeft: 80,
-          width: "100%"
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            marginBottom: "auto",
-            fontSize: 15,
-            height: "7%",
-            justifyContent: "center",
-            alignItems: "center"
-          }}
-        >
-          <div>{menu_data.menu.title}</div>
+    <div className="menu-page">
+      <div className="menu-page-container">
+        <div className="nav-bar">
+          <h3>{menu_data.menu.title}</h3>
           <CartButton />
         </div>
-        <div style={{ height: "90%", fontSize: 30 }}>
-          <div
-            style={{
-              fontWeight: 500,
-              color: "black",
-              marginBottom: 30,
-              width: "100%"
-            }}
-          >
+        <div className="menu-page-content">
+          <h1>
             {menu_data.menu.title} Menu
-          </div>
-          <div
-            style={{
-              borderBottom: "1px solid #DDDDDD",
-              marginRight: 40,
-              marginBottom: 40,
-              display: "flex",
-              flexDirection: "row"
-            }}
-          >
+          </h1>
+          <div class="menu-nav-bar">
             {data.menuCategories.map(category => {
               return (
                 <ScrollLink
                   activeClass="active"
                   className="category-link"
                   smooth={true}
-                  style={{
-                    fontSize: 16,
-                    textDecoration: "none",
-                    fontWeight: "inherit",
-                    color: "#888888"
-                  }}
                   to={category.id}
                   key={category.id}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      marginRight: 30,
-                      marginBottom: 10
-                    }}
-                  >
-                    {category.title}
-                  </div>
+                {category.title}
                 </ScrollLink>
               );
             })}
@@ -359,11 +312,9 @@ function MenuPage() {
                   id={category.id}
                   key={category.id}
                 >
-                  <div
-                    style={{ color: "black", fontSize: 24, fontWeight: 500 }}
-                  >
+                  <h2>
                     {category.title}
-                  </div>
+                  </h2>
                   <CategorySection category_id={category.id} />
                 </div>
               </Element>
@@ -407,75 +358,34 @@ const AddOrderItemForm = props => {
 
   if (!item) return <></>;
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <div
-        style={{
-          padding: 20,
-          fontSize: 20,
-          color: "black",
-          fontWeight: 500
-        }}
-      >
+    <form onSubmit={handleSubmit(onSubmit)} className="menu-modal-form">
+      <h3>
         {item.title}
-      </div>
-      <div
-        style={{
-          padding: 20,
-          paddingTop: 0,
-          fontSize: 14,
-          color: "#555555"
-        }}
-      >
+      </h3>
+      <p>
         {item.description}
-      </div>
-      <div
-        style={{
-          padding: 20,
-          paddingTop: 0,
-          paddingBottom: 5,
-          fontSize: 16,
-          color: "black",
-          fontWeight: 500
-        }}
-      >
+      </p>
+      <h4>
         Special Instructions
-      </div>
-      <div
-        style={{
-          borderBottom: "1px solid #DDDDDD"
-        }}
-      ></div>
+      </h4>
+      <hr></hr>
       <input
-        style={{
-          width: "100%",
-          border: "none",
-          borderBottom: "1px solid #DDDDDD",
-          outline: "none",
-          padding: 20
-        }}
+        type="text"
         name="instructions"
         placeholder="Add instructions..."
         ref={register()}
       />
-      <div style={{ fontWeight: 500, display: "flex" }}>
+      <hr></hr>
+
+      <div class="btn-container">
         <div
-          style={{
-            display: "flex",
-            borderRadius: 50,
-            border: "1px solid #DDDDDD",
-            justifyContent: "space-between",
-            alignItems: "center",
-            height: 50,
-            margin: 20,
-            width: 175
-          }}
+            className="btn-left" 
         >
-          <div
+          <span
             style={{
               marginLeft: "auto",
               cursor: "pointer",
               textAlign: "center",
-              width: 60
             }}
             onClick={() => {
               if (count > 1) {
@@ -483,52 +393,29 @@ const AddOrderItemForm = props => {
               }
             }}
           >
-            -
-          </div>
-          <div style={{ textAlign: "center", width: 30 }}>{count}</div>
-          <div
+            –
+          </span>
+          <span style={{ textAlign: "center", width: 40, display: "inline-block"}}>{count}</span>
+          <span
             style={{
               marginRight: "auto",
               cursor: "pointer",
-              width: 60,
               textAlign: "center"
             }}
             onClick={() => setCount(count + 1)}
           >
             +
-          </div>
+          </span>
         </div>
         <button
           type="submit"
-          style={{
-            display: "flex",
-            borderRadius: 50,
-            border: "1px solid #DDDDDD",
-            backgroundColor: "#F5744B",
-            color: "white",
-            justifyContent: "space-between",
-            flexGrow: 1,
-            alignItems: "center",
-            height: 50,
-            margin: 20,
-            textAlign: "center",
-            outline: "none"
-          }}
+          className="btn-right btn-primary"
         >
-          <div
-            style={{
-              marginRight: "auto",
-              cursor: "pointer",
-              width: "100%",
-              fontWeight: 500
-            }}
-          >
-            {loading ? (
-              <PuffLoader />
-            ) : (
-              "Add to Cart ($" + (count * item.price).toString() + ")"
-            )}
-          </div>
+          {loading ? (
+            <PuffLoader />
+          ) : (
+            "Add to Cart $" + (count * item.price).toString()
+          )}
         </button>
       </div>
       {error && (
@@ -575,32 +462,16 @@ const CategorySection = props => {
         {data.menuItems.map(item => {
           return (
             <div
-              style={{
-                marginTop: 15,
-                marginRight: 25,
-                border: "1px solid #DDDDDD",
-                borderRadius: 8,
-                height: "100%",
-                width: 500,
-                padding: 17,
-                cursor: "pointer"
-              }}
               onClick={() => setSelectedItem(item)}
               key={item.id}
+              className="menu-item"
             >
-              <div style={{ fontSize: 16, fontWeight: 600, color: "black" }}>
+              <h4 style={{ fontSize: 16, fontWeight: 600, color: "black" }}>
                 {item.title}
-              </div>
-              <div
-                style={{
-                  marginTop: 10,
-                  fontSize: 16,
-                  fontWeight: 400,
-                  color: "#444444"
-                }}
-              >
+              </h4>
+              <p>
                 {item.description}
-              </div>
+              </p>
               <div
                 style={{
                   marginTop: 10,
